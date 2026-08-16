@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Check formatting
+        run: |
+          gofmt -l . | tee /tmp/gofmt.out
+          test -z "$(cat /tmp/gofmt.out)"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Static build (CGO disabled)
+        run: CGO_ENABLED=0 go build -o /tmp/fuji ./cmd/fuji
+
+      - name: Test
+        run: go test ./... -count=1
+
+      - name: Race test (darwin/linux)
+        run: go test ./... -race -count=1
+        if: runner.os != 'windows'
