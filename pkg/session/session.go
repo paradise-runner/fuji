@@ -17,6 +17,7 @@ import (
 	"fuji/pkg/loop"
 	"fuji/pkg/messages"
 	"fuji/pkg/modelrt"
+	"fuji/pkg/prompt"
 	"fuji/pkg/sessionmgr"
 	"fuji/pkg/skills"
 	"fuji/pkg/templates"
@@ -143,7 +144,8 @@ type Config struct {
 	Tools          []tools.Definition
 	AllowedTools   []string
 	ExcludedTools  []string
-	SystemPrompt   string // optional override; built when empty
+	BasePrompt     string // base system-prompt text; empty → embedded default
+	SystemPrompt   string // optional full override; built when empty
 }
 
 // Session is the agent session.
@@ -212,7 +214,11 @@ func New(cfg Config) (*Session, error) {
 	}
 	s.systemPrompt = cfg.SystemPrompt
 	if s.systemPrompt == "" {
-		s.systemPrompt = buildSystemPrompt(cfg.Tools, cfg.Skills)
+		base := cfg.BasePrompt
+		if base == "" {
+			base = prompt.DefaultBase()
+		}
+		s.systemPrompt = buildSystemPrompt(base, cfg.Tools, cfg.Skills)
 	}
 	sc := cfg.SessionManager.BuildSessionContext()
 	s.messages = sc.Messages
@@ -245,9 +251,12 @@ func wrapToolTimeout(def tools.Definition, timeout time.Duration) tools.Definiti
 }
 
 // buildSystemPrompt renders the base + tools + skills prompt.
-func buildSystemPrompt(toolsList []tools.Definition, sk []skills.Skill) string {
+func buildSystemPrompt(base string, toolsList []tools.Definition, sk []skills.Skill) string {
 	var b strings.Builder
-	b.WriteString("You are a coding agent working in a repository. You help the user with coding tasks by using the available tools.\n")
+	b.WriteString(base)
+	if !strings.HasSuffix(strings.TrimRight(base, " \t\n"), "\n") {
+		b.WriteString("\n")
+	}
 	if len(toolsList) > 0 {
 		b.WriteString("\n# Available tools\n\n")
 		for _, t := range toolsList {

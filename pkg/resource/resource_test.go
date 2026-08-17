@@ -110,6 +110,30 @@ func TestDiscoverPrecedence(t *testing.T) {
 	}
 }
 
+func TestDiscoverPromptOverride(t *testing.T) {
+	root := t.TempDir()
+	user := filepath.Join(root, ".fuji")
+	proj := filepath.Join(root, "proj", ".fuji")
+
+	res := resource.Discover(resource.Options{ProjectDir: proj, UserDir: user})
+	if !strings.Contains(res.BasePrompt, "coding agent") {
+		t.Errorf("default base prompt not used: %q", res.BasePrompt)
+	}
+
+	write(t, filepath.Join(proj, "prompt.md"), "PROJECT PROMPT\n")
+	res = resource.Discover(resource.Options{ProjectDir: proj, UserDir: user})
+	if res.BasePrompt != "PROJECT PROMPT\n" {
+		t.Errorf("project override = %q", res.BasePrompt)
+	}
+
+	write(t, filepath.Join(proj, "prompt.md"), "PROJECT PROMPT\n")
+	write(t, filepath.Join(user, "prompt.md"), "USER PROMPT\n")
+	res = resource.Discover(resource.Options{ProjectDir: proj, UserDir: user})
+	if res.BasePrompt != "PROJECT PROMPT\n" {
+		t.Errorf("project should win over user: %q", res.BasePrompt)
+	}
+}
+
 func TestSkillCommandExpansion(t *testing.T) {
 	skill := skills.Skill{Name: "review", Description: "d", Content: "BODY", FilePath: "/x/y/review/SKILL.md"}
 	expanded, ok := skills.ExpandSkillCommand("/skill:review be thorough", []skills.Skill{skill})

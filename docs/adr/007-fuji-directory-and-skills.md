@@ -20,11 +20,19 @@ Mirror the reference directory convention with `.fuji`:
 | `.<agent>/settings.json` | `.fuji/settings.json` |
 | `~/.<agent>/skills/` | `~/.fuji/skills/` |
 | `.<agent>/skills/` | `.fuji/skills/` |
+| `~/.<agent>/prompt.md` | `~/.fuji/prompt.md` |
+| `.<agent>/prompt.md` | `.fuji/prompt.md` |
 
 Skill discovery order: explicit `--skills <dir>` > project `.fuji/skills/` >
 user `~/.fuji/skills/`. Skills use the standard format (frontmatter + body,
 directory per skill with `SKILL.md`, or root `.md` files) and are injected
 into the system prompt via `formatSkillsForPrompt` parity.
+
+The base system prompt (`pkg/prompt/base.md`) is data embedded into the
+binary. A `prompt.md` override in the project `.fuji/` (or user `~/.fuji/`)
+dir replaces it, so the agent's persona/instructions can be managed
+independently of the agent code. Precedence: project > user > embedded
+default.
 
 ## Consequences
 

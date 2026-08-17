@@ -25,6 +25,7 @@ fuji/
 │   ├── compaction/          # pure compaction logic + summarization driver
 │   ├── skills/              # skill discovery + system-prompt formatting
 │   ├── templates/           # file-based prompt templates
+│   ├── prompt/              # base system prompt (embedded), prompt.md override
 │   ├── config/              # settings model, precedence merge, paths
 │   ├── resource/            # resource discovery (.fuji dirs, --skills)
 │   ├── messages/            # content blocks, AgentMessage model
@@ -100,10 +101,13 @@ mapping (§9 of core-spec). Contains no agent logic.
 - driver: summarization LLM call via `modelrt` with shared retry budget;
   used by `session`
 
-### `pkg/skills` / `pkg/templates`
+### `pkg/skills` / `pkg/templates` / `pkg/prompt`
 
-- discovery from `--skills` flag, project `.fuji/`, user `~/.fuji/`
+- skills/templates discovery from `--skills` flag, project `.fuji/`, user
+  `~/.fuji/`
 - parsing (frontmatter), `FormatSkillsForPrompt`, template expansion
+- `pkg/prompt`: base system prompt text as data (`base.md`, embedded) with a
+  `prompt.md` override in project/user `.fuji/` dirs
 
 ### `pkg/config`
 
@@ -113,7 +117,8 @@ mapping (§9 of core-spec). Contains no agent logic.
 ### `pkg/resource`
 
 - mirrors the *subset* of the reference `ResourceLoader` that survives D3:
-  skills, prompt templates, context files. No extension discovery, no
+  skills, prompt templates, context files, and the base system-prompt
+  override. No extension discovery, no
   packages.
 
 ### `pkg/messages`
