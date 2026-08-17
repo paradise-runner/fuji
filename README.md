@@ -52,6 +52,40 @@ fuji run --prompt @task.md --cwd /path/to/repo --model claude-sonnet-4-5
 
 ---
 
+## Scheduling Jobs with Cron
+
+Because `fuji` runs headless and exits cleanly with a predictable exit code, dropping a job into `cron` is trivial — there is no daemon or TUI to keep running. Here's a `crontab` entry that runs a nightly repo-health check:
+
+```cron
+# m h dom mon dow command
+0 3 * * * cd /path/to/repo && /opt/fuji/fuji run --prompt @task.md --cwd /path/to/repo --model claude-sonnet-4-5 >> /var/log/fuji.log 2>&1
+```
+
+Just one line. The one-shot `fuji run` runs the entire agent task to completion, exits with a code you can act on (`0` success, `2` runtime failure), and logs are simply appended to a file. No supervisor, no process manager — plain cron is enough.
+
+For finer scheduling control within a single day (e.g. every 15 minutes), cron's step syntax works the same way:
+
+```cron
+*/15 * * * * /opt/fuji/fuji run --prompt "Commit any staged changes" --cwd /path/to/repo >> /var/log/fuji.log 2>&1
+```
+
+To install it interactively as your current user:
+
+```bash
+crontab -e
+# paste a line above, save, and exit
+```
+
+And confirm your job is scheduled:
+
+```bash
+crontab -l
+```
+
+That's all there is to it — a full agentic job, scheduled and running with the tools your system already ships.
+
+---
+
 ## CLI Reference
 
 ```
