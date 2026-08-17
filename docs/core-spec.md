@@ -114,6 +114,7 @@ type Config struct {
     SessionManager *sessionmgr.Manager
     Skills         []skills.Skill // from .fuji discovery + --skills
     Templates      []templates.Template
+    BasePrompt     string          // base system-prompt text (pkg/prompt)
     Tools          []tools.Definition // the bundled tool set (D6)
     AllowedTools   []string          // allowlist; nil = all bundled
     ExcludedTools  []string          // denylist, applied after allowlist
@@ -418,6 +419,12 @@ Skills are data (D3, D11):
   invocation syntax `/skill:name args` expands to the skill body on
   `Prompt`/`Steer`/`FollowUp` (`_expandSkillCommand` parity).
 
+The base system prompt is data, not code (`pkg/prompt/base.md`), so it can be
+managed without editing the agent loop. A `prompt.md` in the project `.fuji/`
+(e.g. `.fuji/prompt.md`) or user `~/.fuji/prompt.md` dir overrides the
+embedded base (project > user > default); discovered via `resource.Discover`
+and passed as `Config.BasePrompt`.
+
 Prompt templates (reference `docs/prompt-templates.md`): file-based `*.md`
 templates under `.fuji/prompt-templates/` (user) and project
 `.fuji/prompt-templates/`; expansion on `Prompt` unless disabled
@@ -686,6 +693,7 @@ Every deliberate deviation, so parity work is explicit:
 | `core/compaction/*` | `pkg/compaction` |
 | `core/skills.ts` | `pkg/skills` |
 | `core/prompt-templates.ts` | `pkg/templates` |
+| base system prompt | `pkg/prompt` (embedded `base.md` + `prompt.md` override) |
 | `core/settings-manager.ts`, `core/config.ts`, `core/defaults.ts` | `pkg/config` |
 | `core/event-bus.ts` | `pkg/eventbus` |
 | `core/messages.ts` | `pkg/messages` |

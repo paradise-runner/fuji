@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"fuji/pkg/prompt"
 	"fuji/pkg/skills"
 	"fuji/pkg/templates"
 )
@@ -18,6 +19,9 @@ import (
 type Result struct {
 	Skills    []skills.Skill
 	Templates []templates.Template
+	// BasePrompt is the effective base system-prompt text: the user/project
+	// prompt.md override (project > user) or the embedded default.
+	BasePrompt string
 	// Diagnostics are non-fatal warnings (unreadable/parse-failed files).
 	Diagnostics []string
 }
@@ -75,6 +79,9 @@ func Discover(opts Options) Result {
 			}
 		}
 	}
+
+	// Base system prompt: project > user override > embedded default.
+	res.BasePrompt = prompt.ResolveBase(opts.ProjectDir, opts.UserDir)
 
 	// Lowest precedence first so higher-precedence loads replace.
 	loadSkills(filepath.Join(opts.UserDir, "skills"))

@@ -136,6 +136,7 @@ func runCmd(args []string) int {
 		Skills:         res.Skills,
 		Templates:      res.Templates,
 		Tools:          toolList,
+		BasePrompt:     res.BasePrompt,
 		AllowedTools:   cfg.AllowedTools,
 		ExcludedTools:  cfg.ExcludedTools,
 	})
