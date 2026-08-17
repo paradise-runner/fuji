@@ -255,6 +255,53 @@ func TestFromEnv(t *testing.T) {
 	}
 }
 
+func TestOpenRouterAutoAttribution(t *testing.T) {
+	// Base URL points at OpenRouter → defaults auto-filled for advertising.
+	cfg, err := Resolve(Layer{Name: LayerProject, Src: Source{
+		"model.baseUrl": "https://openrouter.ai/api/v1",
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.AppURL != DefaultAppURL {
+		t.Errorf("AppURL = %q, want %q", cfg.AppURL, DefaultAppURL)
+	}
+	if cfg.AppTitle != DefaultAppTitle {
+		t.Errorf("AppTitle = %q, want %q", cfg.AppTitle, DefaultAppTitle)
+	}
+}
+
+func TestOpenRouterAttributionNoOverride(t *testing.T) {
+	// Explicit user attribution always wins over the auto default.
+	cfg, err := Resolve(Layer{Name: LayerProject, Src: Source{
+		"model.baseUrl": "https://openrouter.ai/api/v1",
+		"app.url":       "https://myapp.com",
+		"app.title":     "My AI Assistant",
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.AppURL != "https://myapp.com" {
+		t.Errorf("AppURL = %q", cfg.AppURL)
+	}
+	if cfg.AppTitle != "My AI Assistant" {
+		t.Errorf("AppTitle = %q", cfg.AppTitle)
+	}
+}
+
+func TestNoAttributionForOtherProviders(t *testing.T) {
+	// Non-OpenRouter base URL → no attribution auto-filled.
+	cfg, err := Resolve(Layer{Name: LayerProject, Src: Source{
+		"model.baseUrl": "https://api.anthropic.com",
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.AppURL != "" || cfg.AppTitle != "" {
+		t.Errorf("unexpected attribution for non-OpenRouter: %q/%q", cfg.AppURL, cfg.AppTitle)
+	}
+}
+
 func TestSessionsDirEncoding(t *testing.T) {
 	got := SessionsDir("/home/u/.fuji", "", "/home/u/dev/my-project")
 	// encoding: leading slash stripped, slashes become dashes, wrapped in

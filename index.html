@@ -1,0 +1,1635 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>fuji — agent runtime</title>
+  <meta
+    name="description"
+    content="A small, embeddable agent runtime for building and deploying agents at scale."
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --cream: #fffaf1;
+      --cream-deep: #f8f0df;
+      --ink: #42483d;
+      --muted: #7d8277;
+
+      --apple-red: #d97879;
+      --apple-red-light: #edb1ae;
+      --apple-pink: #f5d0ca;
+      --apple-yellow: #f1d98e;
+      --apple-green: #afbf91;
+      --apple-green-dark: #68765c;
+
+      --white: #fffdf8;
+
+      --serif: "Manrope", sans-serif;
+      --sans: "DM Sans", sans-serif;
+
+      --radius: 28px;
+      --max: 1180px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .container {
+      width: min(calc(100% - 48px), var(--max));
+      margin-inline: auto;
+    }
+
+    /* -------------------------
+       NAV
+    ------------------------- */
+
+    nav {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 20;
+      padding: 28px 0;
+    }
+
+    nav .inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-mark {
+      width: 25px;
+      height: 25px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .nav-links a {
+      transition: color 180ms ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--ink);
+    }
+
+    .nav-github {
+      color: var(--ink) !important;
+      padding: 10px 16px;
+      border: 1px solid rgba(66, 72, 61, 0.15);
+      border-radius: 999px;
+      background: rgba(255, 253, 248, 0.5);
+      backdrop-filter: blur(10px);
+    }
+
+    /* -------------------------
+       HERO
+    ------------------------- */
+
+    .hero {
+      min-height: 900px;
+      height: 100vh;
+      max-height: 1100px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 10;
+      width: min(650px, 75%);
+      margin-top: -90px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 25px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--apple-green-dark);
+    }
+
+    .eyebrow-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--apple-red);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 700px;
+      font-family: var(--serif);
+      font-size: clamp(58px, 7vw, 102px);
+      line-height: 0.98;
+      letter-spacing: -0.065em;
+      font-weight: 700;
+    }
+
+    h1 em {
+      color: var(--apple-red);
+      font-style: normal;
+    }
+
+    .hero-description {
+      width: min(470px, 100%);
+      margin: 30px 0 34px;
+      font-size: 18px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      gap: 11px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 50px;
+      padding: 0 21px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      transition:
+        transform 180ms ease,
+        box-shadow 180ms ease,
+        background 180ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .button-primary {
+      color: white;
+      background: var(--apple-red);
+      box-shadow: 0 12px 30px rgba(217, 120, 121, 0.22);
+    }
+
+    .button-primary:hover {
+      box-shadow: 0 16px 35px rgba(217, 120, 121, 0.3);
+    }
+
+    .button-secondary {
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(66, 72, 61, 0.12);
+    }
+
+    /* -------------------------
+       APPLE
+    ------------------------- */
+
+    .apple-stage {
+      position: absolute;
+      z-index: 2;
+      right: -5vw;
+      bottom: -13vw;
+      width: min(70vw, 900px);
+      height: min(70vw, 900px);
+      pointer-events: none;
+      animation: appleFloat 8s ease-in-out infinite;
+    }
+
+    .apple-glow {
+      position: absolute;
+      inset: 15%;
+      border-radius: 50%;
+      background:
+        radial-gradient(
+          circle,
+          rgba(242, 217, 142, 0.42) 0%,
+          rgba(245, 208, 202, 0.32) 36%,
+          rgba(255, 250, 241, 0) 70%
+        );
+      filter: blur(15px);
+    }
+
+    .apple {
+      position: absolute;
+      inset: 4%;
+      width: 92%;
+      height: 92%;
+      overflow: visible;
+      filter: drop-shadow(0 40px 50px rgba(100, 80, 50, 0.13));
+    }
+
+    .apple-skin {
+      fill: url(#appleGradient);
+    }
+
+    .apple-highlight {
+      fill: url(#highlightGradient);
+      opacity: .75;
+    }
+
+    .apple-shadow {
+      fill: #c9656b;
+      opacity: .18;
+    }
+
+    .apple-leaf {
+      fill: url(#leafGradient);
+    }
+
+    .apple-stem {
+      fill: #7d5d49;
+    }
+
+    @keyframes appleFloat {
+      0%, 100% {
+        transform: translateY(0) rotate(-1deg);
+      }
+
+      50% {
+        transform: translateY(-14px) rotate(1deg);
+      }
+    }
+
+    .hero-note {
+      position: absolute;
+      z-index: 8;
+      right: 8%;
+      bottom: 8%;
+      max-width: 190px;
+      padding: 15px 17px;
+      border: 1px solid rgba(66,72,61,.08);
+      border-radius: 18px;
+      background: rgba(255, 253, 248, .68);
+      backdrop-filter: blur(14px);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .hero-note strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    /* -------------------------
+       INTRO
+    ------------------------- */
+
+    .intro {
+      position: relative;
+      padding: 150px 0 170px;
+      background: var(--white);
+    }
+
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 100px;
+      align-items: start;
+    }
+
+    .section-kicker {
+      margin-bottom: 22px;
+      color: var(--apple-red);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+    }
+
+    .intro h2 {
+      max-width: 590px;
+      margin: 0;
+      font-size: clamp(40px, 5vw, 70px);
+      line-height: 1.02;
+      letter-spacing: -0.055em;
+    }
+
+    .intro-copy {
+      padding-top: 46px;
+      max-width: 500px;
+    }
+
+    .intro-copy p {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.75;
+    }
+
+    .accent-line {
+      width: 60px;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(
+        90deg,
+        var(--apple-red),
+        var(--apple-yellow),
+        var(--apple-green)
+      );
+    }
+
+    /* -------------------------
+       FEATURES
+    ------------------------- */
+
+    .features {
+      padding: 140px 0;
+      background: var(--cream);
+    }
+
+    .features-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 60px;
+      align-items: end;
+      margin-bottom: 55px;
+    }
+
+    .features-header h2 {
+      margin: 0;
+      max-width: 600px;
+      font-size: clamp(42px, 5vw, 68px);
+      line-height: 1;
+      letter-spacing: -0.055em;
+    }
+
+    .features-header p {
+      max-width: 340px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+    }
+
+    .feature-card {
+      min-height: 300px;
+      padding: 28px;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .feature-card:nth-child(1) {
+      background: #f4d8d1;
+    }
+
+    .feature-card:nth-child(2) {
+      background: #e5ecd7;
+    }
+
+    .feature-card:nth-child(3) {
+      background: #f4e5ae;
+    }
+
+    .feature-card:nth-child(4) {
+      background: #e8dfe0;
+    }
+
+    .feature-number {
+      font-size: 12px;
+      font-weight: 700;
+      opacity: .5;
+    }
+
+    .feature-card h3 {
+      margin: 0 0 10px;
+      font-size: 23px;
+      letter-spacing: -0.03em;
+    }
+
+    .feature-card p {
+      margin: 0;
+      max-width: 230px;
+      color: rgba(66,72,61,.7);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .feature-orb {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      right: -25px;
+      top: -25px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.28);
+    }
+
+    /* -------------------------
+       ARCHITECTURE
+    ------------------------- */
+
+    .architecture {
+      padding: 170px 0;
+      background: var(--white);
+      overflow: hidden;
+    }
+
+    .architecture-header {
+      text-align: center;
+      margin-bottom: 80px;
+    }
+
+    .architecture-header h2 {
+      margin: 0 auto 20px;
+      max-width: 760px;
+      font-size: clamp(44px, 6vw, 78px);
+      line-height: .98;
+      letter-spacing: -0.06em;
+    }
+
+    .architecture-header p {
+      max-width: 540px;
+      margin: 0 auto;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .diagram {
+      position: relative;
+      width: min(900px, 100%);
+      height: 450px;
+      margin: auto;
+    }
+
+    .diagram-center {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 185px;
+      height: 185px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: linear-gradient(145deg, #e99592, #d36e72);
+      box-shadow: 0 25px 70px rgba(217,120,121,.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .diagram-center::after {
+      content: "";
+      position: absolute;
+      inset: -15px;
+      border: 1px solid rgba(217,120,121,.18);
+      border-radius: inherit;
+    }
+
+    .diagram-node {
+      position: absolute;
+      padding: 13px 18px;
+      border-radius: 999px;
+      background: var(--cream);
+      border: 1px solid rgba(66,72,61,.09);
+      box-shadow: 0 8px 25px rgba(70,60,40,.05);
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .node-model {
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .node-tools {
+      left: 8%;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .node-session {
+      right: 8%;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .node-infra {
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .diagram-line {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 2px;
+      height: 185px;
+      background: linear-gradient(
+        to bottom,
+        rgba(217,120,121,.12),
+        rgba(217,120,121,.35)
+      );
+      transform-origin: center;
+    }
+
+    .line-top {
+      transform: translate(-50%, -100%);
+    }
+
+    .line-bottom {
+      transform: translate(-50%, 0) rotate(180deg);
+    }
+
+    .line-left,
+    .line-right {
+      width: 185px;
+      height: 2px;
+      background: linear-gradient(
+        to right,
+        rgba(217,120,121,.12),
+        rgba(217,120,121,.35)
+      );
+    }
+
+    .line-left {
+      transform: translate(-100%, -50%);
+    }
+
+    .line-right {
+      transform: translate(0, -50%) rotate(180deg);
+    }
+
+    /* -------------------------
+       SCALE
+    ------------------------- */
+
+    .scale {
+      position: relative;
+      min-height: 800px;
+      padding: 160px 0;
+      background:
+        radial-gradient(
+          circle at 50% 80%,
+          rgba(175,191,145,.3),
+          transparent 45%
+        ),
+        var(--cream);
+      overflow: hidden;
+    }
+
+    .scale-header {
+      position: relative;
+      z-index: 4;
+      text-align: center;
+    }
+
+    .scale-header h2 {
+      margin: 0 auto 20px;
+      max-width: 800px;
+      font-size: clamp(48px, 7vw, 92px);
+      line-height: .95;
+      letter-spacing: -0.065em;
+    }
+
+    .scale-header p {
+      max-width: 460px;
+      margin: auto;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .apple-field {
+      position: relative;
+      height: 380px;
+      max-width: 1100px;
+      margin: 30px auto -50px;
+    }
+
+    .mini-apple {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      transition: transform 500ms cubic-bezier(.2,.8,.2,1);
+    }
+
+    .mini-apple:hover {
+      transform: translateY(-12px) rotate(4deg) !important;
+    }
+
+    .mini-apple svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 15px 18px rgba(80,60,30,.09));
+    }
+
+    .mini-apple:nth-child(1) { left: 43%; top: 25px; transform: rotate(-5deg); }
+    .mini-apple:nth-child(2) { left: 28%; top: 110px; transform: rotate(7deg) scale(.8); }
+    .mini-apple:nth-child(3) { left: 57%; top: 110px; transform: rotate(-3deg) scale(.85); }
+    .mini-apple:nth-child(4) { left: 15%; top: 220px; transform: rotate(-8deg) scale(.7); }
+    .mini-apple:nth-child(5) { left: 42%; top: 210px; transform: rotate(5deg) scale(.75); }
+    .mini-apple:nth-child(6) { left: 70%; top: 220px; transform: rotate(-7deg) scale(.7); }
+    .mini-apple:nth-child(7) { left: 33%; top: 310px; transform: rotate(8deg) scale(.6); }
+    .mini-apple:nth-child(8) { left: 61%; top: 310px; transform: rotate(-3deg) scale(.6); }
+
+    /* -------------------------
+       CODE
+    ------------------------- */
+
+    .code-section {
+      padding: 150px 0;
+      background: var(--white);
+    }
+
+    .code-grid {
+      display: grid;
+      grid-template-columns: .85fr 1.15fr;
+      gap: 100px;
+      align-items: center;
+    }
+
+    .code-copy h2 {
+      margin: 0 0 25px;
+      font-size: clamp(42px, 5vw, 67px);
+      line-height: 1;
+      letter-spacing: -0.055em;
+    }
+
+    .code-copy p {
+      margin: 0 0 30px;
+      max-width: 420px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .code-card {
+      overflow: hidden;
+      border-radius: 30px;
+      background: #f5e7dd;
+      box-shadow: 0 25px 70px rgba(80,60,40,.08);
+    }
+
+    .code-top {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 17px 21px;
+      border-bottom: 1px solid rgba(66,72,61,.08);
+    }
+
+    .code-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(66,72,61,.18);
+    }
+
+    .code-body {
+      padding: 40px;
+      overflow-x: auto;
+    }
+
+    pre {
+      margin: 0;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.9;
+      color: #55574d;
+    }
+
+    .code-keyword { color: #b15e61; }
+    .code-function { color: #66765c; }
+    .code-string { color: #a27b39; }
+    .code-comment { color: #99988b; }
+
+    /* -------------------------
+       CTA
+    ------------------------- */
+
+    .cta {
+      position: relative;
+      min-height: 650px;
+      padding: 150px 0;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      background: var(--cream);
+    }
+
+    .cta-copy {
+      position: relative;
+      z-index: 5;
+      max-width: 600px;
+    }
+
+    .cta h2 {
+      margin: 0 0 25px;
+      font-size: clamp(52px, 7vw, 92px);
+      line-height: .95;
+      letter-spacing: -0.065em;
+    }
+
+    .cta p {
+      max-width: 400px;
+      margin: 0 0 32px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .cta-apple {
+      position: absolute;
+      width: min(50vw, 650px);
+      height: min(50vw, 650px);
+      right: -4%;
+      bottom: -18%;
+      opacity: .9;
+      transform: rotate(8deg);
+      filter: drop-shadow(0 30px 50px rgba(80,60,30,.1));
+    }
+
+    /* -------------------------
+       FOOTER
+    ------------------------- */
+
+    footer {
+      padding: 35px 0;
+      background: var(--white);
+      border-top: 1px solid rgba(66,72,61,.08);
+    }
+
+    footer .inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    footer a:hover {
+      color: var(--ink);
+    }
+
+    /* -------------------------
+       RESPONSIVE
+    ------------------------- */
+
+    @media (max-width: 900px) {
+      .hero {
+        min-height: 850px;
+        height: auto;
+        padding: 160px 0 100px;
+        align-items: flex-start;
+      }
+
+      .hero-copy {
+        width: 100%;
+        margin: 0;
+      }
+
+      .apple-stage {
+        width: 720px;
+        height: 720px;
+        right: -240px;
+        bottom: -190px;
+        opacity: .82;
+      }
+
+      .hero-note {
+        display: none;
+      }
+
+      .intro-grid,
+      .code-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .intro-copy {
+        padding-top: 20px;
+      }
+
+      .feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .features-header {
+        display: block;
+      }
+
+      .features-header p {
+        margin-top: 25px;
+      }
+
+      .code-grid {
+        gap: 55px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        width: min(calc(100% - 32px), var(--max));
+      }
+
+      nav {
+        padding: 20px 0;
+      }
+
+      .nav-links a:not(.nav-github) {
+        display: none;
+      }
+
+      .hero {
+        min-height: 790px;
+        padding-top: 135px;
+      }
+
+      h1 {
+        font-size: 58px;
+      }
+
+      .hero-description {
+        font-size: 16px;
+      }
+
+      .apple-stage {
+        width: 620px;
+        height: 620px;
+        right: -230px;
+        bottom: -130px;
+      }
+
+      .intro,
+      .features,
+      .architecture,
+      .code-section,
+      .scale {
+        padding: 100px 0;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .feature-card {
+        min-height: 240px;
+      }
+
+      .diagram {
+        height: 420px;
+        transform: scale(.78);
+        transform-origin: center;
+        width: 128%;
+        margin-left: -14%;
+      }
+
+      .scale {
+        min-height: 700px;
+      }
+
+      .apple-field {
+        transform: scale(.8);
+        margin-left: -10%;
+        width: 120%;
+      }
+
+      .code-body {
+        padding: 25px;
+      }
+
+      .cta {
+        min-height: 620px;
+      }
+
+      .cta-apple {
+        width: 520px;
+        height: 520px;
+        right: -210px;
+        bottom: -100px;
+      }
+
+      footer .inner {
+        align-items: flex-start;
+        gap: 15px;
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      .apple-stage {
+        animation: none;
+      }
+
+      .button,
+      .mini-apple {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =========================================
+       SHARED APPLE SVG
+  ========================================== -->
+
+  <svg
+    width="0"
+    height="0"
+    style="position:absolute"
+    aria-hidden="true"
+  >
+    <defs>
+      <linearGradient id="appleGradient" x1="0.18" y1="0.08" x2="0.82" y2="0.92">
+        <stop offset="0%" stop-color="#f0c8a6" />
+        <stop offset="20%" stop-color="#e99388" />
+        <stop offset="48%" stop-color="#d97879" />
+        <stop offset="72%" stop-color="#ce686d" />
+        <stop offset="100%" stop-color="#bb5e65" />
+      </linearGradient>
+
+      <linearGradient id="highlightGradient" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#fff9df" stop-opacity=".9" />
+        <stop offset="48%" stop-color="#f9d9b9" stop-opacity=".25" />
+        <stop offset="100%" stop-color="#f9d9b9" stop-opacity="0" />
+      </linearGradient>
+
+      <linearGradient id="leafGradient" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#c5d3a4" />
+        <stop offset="100%" stop-color="#84976f" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- NAV -->
+
+  <nav>
+    <div class="container inner">
+      <a href="#" class="brand">
+        <svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true">
+          <path
+            d="M51 22 C47 15 48 10 57 5 C61 14 59 20 51 22Z"
+            fill="#7d5d49"
+          />
+          <path
+            d="M55 18 C66 6 79 9 88 14 C78 27 65 28 55 18Z"
+            fill="#87996f"
+          />
+          <path
+            d="M51 24 C34 19 17 28 13 47 C8 68 20 88 50 92 C80 88 92 68 87 47 C83 28 68 19 51 24Z"
+            fill="url(#appleGradient)"
+          />
+          <path
+            d="M25 43 C28 31 39 27 47 30 C38 33 32 39 29 50 C27 57 27 63 29 69 C24 62 22 53 25 43Z"
+            fill="#fff8df"
+            opacity=".55"
+          />
+        </svg>
+        fuji
+      </a>
+
+      <div class="nav-links">
+        <a href="#features">Why Fuji</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#start">Get started</a>
+        <a
+          href="https://github.com/paradise-runner/fuji"
+          class="nav-github"
+          target="_blank"
+          rel="noopener"
+        >
+          GitHub ↗
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+
+  <main>
+
+    <section class="hero">
+      <div class="container">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            agent runtime
+          </div>
+
+          <h1>
+            The agent runtime
+            <em>for building at scale.</em>
+          </h1>
+
+          <p class="hero-description">
+            A small, embeddable core for running agents anywhere.
+            Headless by design. Deterministic by default.
+          </p>
+
+          <div class="actions">
+            <a href="#start" class="button button-primary">
+              Get started
+            </a>
+
+            <a
+              href="https://github.com/paradise-runner/fuji"
+              target="_blank"
+              rel="noopener"
+              class="button button-secondary"
+            >
+              View on GitHub ↗
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="apple-stage" aria-hidden="true">
+        <div class="apple-glow"></div>
+
+        <svg
+          class="apple"
+          viewBox="0 0 700 700"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            class="apple-stem"
+            d="M361 145 C346 110 355 79 393 48 C405 83 392 121 365 151Z"
+          />
+
+          <path
+            class="apple-leaf"
+            d="M365 108 C400 53 461 45 511 62 C475 116 416 138 365 108Z"
+          />
+
+          <path
+            class="apple-skin"
+            d="
+              M349 149
+              C290 126 216 141 166 190
+              C113 242 95 324 108 407
+              C124 507 202 603 340 635
+              C354 639 368 639 382 635
+              C520 603 598 507 614 407
+              C627 324 609 242 556 190
+              C506 141 432 126 373 149
+              C364 153 358 153 349 149Z
+            "
+          />
+
+          <path
+            class="apple-highlight"
+            d="
+              M171 258
+              C197 194 263 174 312 189
+              C260 216 228 259 217 318
+              C207 373 216 420 238 462
+              C190 429 157 355 171 258Z
+            "
+          />
+
+          <path
+            class="apple-shadow"
+            d="
+              M527 231
+              C575 280 580 354 562 423
+              C540 507 479 565 397 593
+              C466 548 511 478 522 393
+              C533 308 519 266 493 226
+              C504 226 516 229 527 231Z
+            "
+          />
+
+          <ellipse
+            cx="250"
+            cy="268"
+            rx="70"
+            ry="32"
+            fill="#fff8df"
+            opacity=".22"
+            transform="rotate(-27 250 268)"
+          />
+
+          <ellipse
+            cx="212"
+            cy="315"
+            rx="30"
+            ry="70"
+            fill="#fff8df"
+            opacity=".15"
+            transform="rotate(22 212 315)"
+          />
+        </svg>
+      </div>
+
+      <div class="hero-note">
+        <strong>Small by design.</strong>
+        A pure Go core without framework baggage or interactive overhead.
+      </div>
+    </section>
+
+    <!-- INTRO -->
+
+    <section class="intro">
+      <div class="container intro-grid">
+        <div>
+          <div class="section-kicker">A different kind of agent framework</div>
+
+          <h2>
+            Small enough to embed.
+            Serious enough to scale.
+          </h2>
+        </div>
+
+        <div class="intro-copy">
+          <p>
+            Fuji is a pure, naked core for agentic work. It gives you the
+            runtime, tools, sessions, and provider integrations you need
+            without forcing an application framework around them.
+          </p>
+
+          <p>
+            Use it as a Go library, run it headlessly as a one-shot process,
+            or build it into systems that need to operate across a fleet.
+          </p>
+
+          <div class="accent-line"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+
+    <section class="features" id="features">
+      <div class="container">
+
+        <div class="features-header">
+          <div>
+            <div class="section-kicker">The essentials</div>
+            <h2>Everything an agent needs.<br />Nothing it doesn't.</h2>
+          </div>
+
+          <p>
+            Fuji keeps the core deliberately small while providing the pieces
+            that make an agent useful in production.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+
+          <article class="feature-card">
+            <span class="feature-number">01</span>
+
+            <div>
+              <h3>Pure</h3>
+              <p>
+                A lightweight execution engine without heavy framework
+                dependencies or interactive overhead.
+              </p>
+            </div>
+
+            <div class="feature-orb"></div>
+          </article>
+
+          <article class="feature-card">
+            <span class="feature-number">02</span>
+
+            <div>
+              <h3>Embeddable</h3>
+              <p>
+                Use Fuji directly as a Go library or run it as a simple,
+                headless CLI.
+              </p>
+            </div>
+
+            <div class="feature-orb"></div>
+          </article>
+
+          <article class="feature-card">
+            <span class="feature-number">03</span>
+
+            <div>
+              <h3>Deterministic</h3>
+              <p>
+                Bundled tools keep behavior consistent across environments
+                and eliminate host drift.
+              </p>
+            </div>
+
+            <div class="feature-orb"></div>
+          </article>
+
+          <article class="feature-card">
+            <span class="feature-number">04</span>
+
+            <div>
+              <h3>Provider agnostic</h3>
+              <p>
+                Work with Anthropic, OpenAI-compatible providers, or your own
+                compatible endpoint.
+              </p>
+            </div>
+
+            <div class="feature-orb"></div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+
+    <section class="architecture" id="architecture">
+      <div class="container">
+
+        <div class="architecture-header">
+          <div class="section-kicker">The core</div>
+
+          <h2>
+            One simple runtime.
+            Everything around it.
+          </h2>
+
+          <p>
+            Fuji sits quietly at the center of your system, connecting models,
+            tools, sessions, and infrastructure without dictating how the
+            rest of your application should work.
+          </p>
+        </div>
+
+        <div class="diagram">
+
+          <div class="diagram-line line-top"></div>
+          <div class="diagram-line line-bottom"></div>
+          <div class="diagram-line line-left"></div>
+          <div class="diagram-line line-right"></div>
+
+          <div class="diagram-center">fuji</div>
+
+          <div class="diagram-node node-model">
+            model providers
+          </div>
+
+          <div class="diagram-node node-tools">
+            bundled tools
+          </div>
+
+          <div class="diagram-node node-session">
+            sessions
+          </div>
+
+          <div class="diagram-node node-infra">
+            your infrastructure
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- SCALE -->
+
+    <section class="scale">
+      <div class="container">
+
+        <div class="scale-header">
+          <div class="section-kicker">Built for scale</div>
+
+          <h2>
+            One Fuji.<br />
+            Many agents.
+          </h2>
+
+          <p>
+            From a single task on your laptop to agents running across an
+            entire fleet, the same small core stays underneath.
+          </p>
+        </div>
+
+        <div class="apple-field">
+
+          <!-- mini apple 1 -->
+          <div class="mini-apple">
+            <svg viewBox="0 0 100 100">
+              <path d="M51 22 C47 15 48 10 57 5 C61 14 59 20 51 22Z" fill="#7d5d49"/>
+              <path d="M55 18 C66 6 79 9 88 14 C78 27 65 28 55 18Z" fill="#87996f"/>
+              <path d="M51 24 C34 19 17 28 13 47 C8 68 20 88 50 92 C80 88 92 68 87 47 C83 28 68 19 51 24Z" fill="url(#appleGradient)"/>
+              <path d="M25 43 C28 31 39 27 47 30 C38 33 32 39 29 50 C27 57 27 63 29 69 C24 62 22 53 25 43Z" fill="#fff8df" opacity=".55"/>
+            </svg>
+          </div>
+
+          <!-- mini apple 2 -->
+          <div class="mini-apple">
+            <svg viewBox="0 0 100 100">
+              <path d="M51 22 C47 15 48 10 57 5 C61 14 59 20 51 22Z" fill="#7d5d49"/>
+              <path d="M55 18 C66 6 79 9 88 14 C78 27 65 28 55 18Z" fill="#87996f"/>
+              <path d="M51 24 C34 19 17 28 13 47 C8 68 20 88 50 92 C80 88 92 68 87 47 C83 28 68 19 51 24Z" fill="url(#appleGradient)"/>
+              <path d="M25 43 C28 31 39 27 47 30 C38 33 32 39 29 50 C27 57 27 63 29 69 C24 62 22 53 25 43Z" fill="#fff8df" opacity=".55"/>
+            </svg>
+          </div>
+
+          <!-- mini apple 3 -->
+          <div class="mini-apple">
+            <svg viewBox="0 0 100 100">
+              <path d="M51 22 C47 15 48 10 57 5 C61 14 59 20 51 22Z" fill="#7d5d49"/>
+              <path d="M55 18 C66 6 79 9 88 14 C78 27 65 28 55 18Z" fill="#87996f"/>
+              <path d="M51 24 C34 19 17 28 13 47 C8 68 20 88 50 92 C80 88 92 68 87 47 C83 28 68 19 51 24Z" fill="url(#appleGradient)"/>
+              <path d="M25 43 C28 31 39 27 47 30 C38 33 32 39 29 50 C27 57 27 63 29 69 C24 62 22 53 25 43Z" fill="#fff8df" opacity=".55"/>
+            </svg>
+          </div>
+
+          <!-- mini apple 4 -->
+          <div class="mini-apple">
+            <svg viewBox="0 0 100 100">
+              <path d="M51 22 C47 15 48 10 57 5 C61 14 59 20 51 22Z" fill="#7d5d49"/>
+              <path d="M55 18 C66 6 79 9 88 14 C78 27 65 28 55 18Z" fill="#87996f"/>
+              <path d="M51 24 C34 19 17 28 13 47 C8 68 20 88 50 92 C80 88 92 68 87 47 C83 28 68 19 51 24Z" fill="url(#appleGradient)"/>
+              <path d="M25 43 C28 31 39 27 47 30 C38 33 32 39 29 50 C27 57 27 63 29 69 C24 62 22 53 25 43Z" fill="#fff8df" opacity=".55"/>
+            </svg>
+          </div>
+
+          <!-- mini apple 5 -->
+          <div class="mini-apple">
+            <svg viewBox="0 0 100 100">
+              <path d="M51 22 C47 15 48 10 57 5 C61 14 59 20 51 22Z" fill="#7d5d49"/>
+              <path d="M55 18 C66 6 79 9 88 14 C78 27 65 28 55 18Z" fill="#87996f"/>
+              <path d="M51 24 C34 19 17 28 13 47 C8 68 20 88 50 92 C80 88 92 68 87 47 C83 28 68 19 51 24Z" fill="url(#appleGradient)"/>
+              <path d="M25 43 C28 31 39 27 47 30 C38 33 32 39 29 50 C27 57 27 63 29 69 C24 62 22 53 25 43Z" fill="#fff8df" opacity=".55"/>
+            </svg>
+          </div>
+
+          <!-- mini apple 6 -->
+          <div class="mini-apple">
+            <svg viewBox="0 0 100 100">
+              <path d="M51 22 C47 15 48 10 57 5 C61 14 59 20 51 22Z" fill="#7d5d49"/>
+              <path d="M55 18 C66 6 79 9 88 14 C78 27 65 28 55 18Z" fill="#87996f"/>
+              <path d="M51 24 C34 19 17 28 13 47 C8 68 20 88 50 92 C80 88 92 68 87 47 C83 28 68 19 51 24Z" fill="url(#appleGradient)"/>
+              <path d="M25 43 C28 31 39 27 47 30 C38 33 32 39 29 50 C27 57 27 63 29 69 C24 62 22 53 25 43Z" fill="#fff8df" opacity=".55"/>
+            </svg>
+          </div>
+
+          <!-- mini apple 7 -->
+          <div class="mini-apple">
+            <svg viewBox="0 0 100 100">
+              <path d="M51 22 C47 15 48 10 57 5 C61 14 59 20 51 22Z" fill="#7d5d49"/>
+              <path d="M55 18 C66 6 79 9 88 14 C78 27 65 28 55 18Z" fill="#87996f"/>
+              <path d="M51 24 C34 19 17 28 13 47 C8 68 20 88 50 92 C80 88 92 68 87 47 C83 28 68 19 51 24Z" fill="url(#appleGradient)"/>
+              <path d="M25 43 C28 31 39 27 47 30 C38 33 32 39 29 50 C27 57 27 63 29 69 C24 62 22 53 25 43Z" fill="#fff8df" opacity=".55"/>
+            </svg>
+          </div>
+
+          <!-- mini apple 8 -->
+          <div class="mini-apple">
+            <svg viewBox="0 0 100 100">
+              <path d="M51 22 C47 15 48 10 57 5 C61 14 59 20 51 22Z" fill="#7d5d49"/>
+              <path d="M55 18 C66 6 79 9 88 14 C78 27 65 28 55 18Z" fill="#87996f"/>
+              <path d="M51 24 C34 19 17 28 13 47 C8 68 20 88 50 92 C80 88 92 68 87 47 C83 28 68 19 51 24Z" fill="url(#appleGradient)"/>
+              <path d="M25 43 C28 31 39 27 47 30 C38 33 32 39 29 50 C27 57 27 63 29 69 C24 62 22 53 25 43Z" fill="#fff8df" opacity=".55"/>
+            </svg>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- CODE -->
+
+    <section class="code-section" id="start">
+      <div class="container code-grid">
+
+        <div class="code-copy">
+          <div class="section-kicker">Simple to start</div>
+
+          <h2>Just give it a task.</h2>
+
+          <p>
+            Fuji can run as a standalone process or live directly inside your
+            Go application. The core stays the same either way.
+          </p>
+
+          <a
+            href="https://github.com/paradise-runner/fuji"
+            target="_blank"
+            rel="noopener"
+            class="button button-primary"
+          >
+            Read the documentation ↗
+          </a>
+        </div>
+
+        <div class="code-card">
+
+          <div class="code-top">
+            <span class="code-dot"></span>
+            <span class="code-dot"></span>
+            <span class="code-dot"></span>
+          </div>
+
+          <div class="code-body">
+<pre><span class="code-keyword">package</span> main
+
+<span class="code-keyword">import</span> (
+    <span class="code-string">"context"</span>
+    <span class="code-string">"log"</span>
+
+    <span class="code-string">"fuji/pkg/config"</span>
+    <span class="code-string">"fuji/pkg/session"</span>
+)
+
+<span class="code-keyword">func</span> <span class="code-function">main</span>() {
+    cfg := config.Config{
+        Cwd:      <span class="code-string">"."</span>,
+        Provider: <span class="code-string">"anthropic"</span>,
+        Model:    <span class="code-string">"claude-sonnet"</span>,
+        ApiKey:   <span class="code-string">"your-api-key"</span>,
+    }
+
+    sess, err := session.<span class="code-function">New</span>(cfg)
+    <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {
+        log.<span class="code-function">Fatal</span>(err)
+    }
+    <span class="code-keyword">defer</span> sess.<span class="code-function">Close</span>()
+
+    sess.<span class="code-function">Prompt</span>(
+        context.<span class="code-function">Background</span>(),
+        <span class="code-string">"Analyze this repo"</span>,
+    )
+}</pre>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CTA -->
+
+    <section class="cta">
+      <div class="container">
+        <div class="cta-copy">
+          <div class="section-kicker">Open source</div>
+
+          <h2>
+            Build something<br />
+            with Fuji.
+          </h2>
+
+          <p>
+            A small core for ambitious agentic systems. Explore the source,
+            build it yourself, and make it part of what you're building.
+          </p>
+
+          <div class="actions">
+            <a
+              href="https://github.com/paradise-runner/fuji"
+              target="_blank"
+              rel="noopener"
+              class="button button-primary"
+            >
+              View on GitHub ↗
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <svg
+        class="cta-apple"
+        viewBox="0 0 700 700"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M361 145 C346 110 355 79 393 48 C405 83 392 121 365 151Z"
+          fill="#7d5d49"
+        />
+
+        <path
+          d="M365 108 C400 53 461 45 511 62 C475 116 416 138 365 108Z"
+          fill="url(#leafGradient)"
+        />
+
+        <path
+          d="
+            M349 149
+            C290 126 216 141 166 190
+            C113 242 95 324 108 407
+            C124 507 202 603 340 635
+            C354 639 368 639 382 635
+            C520 603 598 507 614 407
+            C627 324 609 242 556 190
+            C506 141 432 126 373 149
+            C364 153 358 153 349 149Z
+          "
+          fill="url(#appleGradient)"
+        />
+
+        <path
+          d="
+            M171 258
+            C197 194 263 174 312 189
+            C260 216 228 259 217 318
+            C207 373 216 420 238 462
+            C190 429 157 355 171 258Z
+          "
+          fill="url(#highlightGradient)"
+        />
+
+        <ellipse
+          cx="250"
+          cy="268"
+          rx="70"
+          ry="32"
+          fill="#fff8df"
+          opacity=".22"
+          transform="rotate(-27 250 268)"
+        />
+      </svg>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+
+  <footer>
+    <div class="container inner">
+      <span>fuji — an agentic core for deploying at scale.</span>
+
+      <a
+        href="https://github.com/paradise-runner/fuji"
+        target="_blank"
+        rel="noopener"
+      >
+        GitHub ↗
+      </a>
+    </div>
+  </footer>
+
+</body>
+</html>

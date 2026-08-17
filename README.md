@@ -68,8 +68,10 @@ Flags:
   --base-url <url>        Custom provider API base URL
   --thinking <level>      Thinking level: off | minimal | low | medium | high | xhigh | max
   --timeout <secs>        Per-turn timeout in seconds
-  --app-url <url>         App attribution URL (OpenRouter HTTP-Referer, required for rankings)
-  --app-title <name>      App display name (OpenRouter X-OpenRouter-Title)
+  --app-url <url>         App attribution URL (OpenRouter HTTP-Referer, required for rankings);
+                          auto-set when --base-url is OpenRouter
+  --app-title <name>      App display name (OpenRouter X-OpenRouter-Title);
+                          auto-set to "fuji" when --base-url is OpenRouter
   --app-categories <list> App marketplace categories, comma-separated (OpenRouter X-OpenRouter-Categories)
   --tools <list>          Comma-separated allowlist of tools
   --no-tools              Disable all tools

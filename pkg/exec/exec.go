@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -100,7 +101,6 @@ func (c *Command) run(ctx context.Context, stdoutBuf, stderrBuf *bytes.Buffer, p
 	start := time.Now()
 	cmd := exec.CommandContext(ctx, c.Name, c.Args...)
 	if c.Opts.Shell {
-		// exec.CommandContext with sh -c: kill process group on cancel.
 		cmd = exec.CommandContext(ctx, shellBin(), shellArgs(c.Opts.NoShellCmd)...)
 	}
 	cmd.Dir = c.Opts.Dir
@@ -110,6 +110,34 @@ func (c *Command) run(ctx context.Context, stdoutBuf, stderrBuf *bytes.Buffer, p
 		env = mergeEnv(env, c.Opts.Env)
 	}
 	cmd.Env = env
+	// Place the child in its own process group so cancellation / deadline can
+	// terminate the child together with any descendants it spawns (shell
+	// subshells, pipelines, background jobs), which would otherwise inherit the
+	// output pipes and block cmd.Wait until they exit on their own.
+	setupProcessGroup(cmd)
+	var pgid atomic.Int32
+	done := make(chan struct{})
+	// Kill the whole process group when the context is cancelled. Guarded with
+	// an atomic pid so the write after Start and the read here never race.
+	go func() {
+		select {
+		case <-ctx.Done():
+			if p := pgid.Load(); p != 0 {
+				killProcessGroup(int(p))
+			}
+		case <-done:
+		}
+	}()
+	defer close(done)
+	killIfDone := func() {
+		// Covers the window where the context was already done before the
+		// process spawned: the watcher above may have fired with pid 0.
+		if ctx.Err() != nil {
+			if p := pgid.Load(); p != 0 {
+				killProcessGroup(int(p))
+			}
+		}
+	}
 
 	if pipe && (c.onStdout != nil || c.onStderr != nil) {
 		stdoutPipe, err := cmd.StdoutPipe()
@@ -123,6 +151,8 @@ func (c *Command) run(ctx context.Context, stdoutBuf, stderrBuf *bytes.Buffer, p
 		if err := cmd.Start(); err != nil {
 			return Result{}, &Error{Op: "start", Name: c.Name, Err: err}
 		}
+		pgid.Store(int32(cmd.Process.Pid))
+		killIfDone()
 		var wg sync.WaitGroup
 		wg.Add(2)
 		go func() {
@@ -151,7 +181,12 @@ func (c *Command) run(ctx context.Context, stdoutBuf, stderrBuf *bytes.Buffer, p
 	}
 	cmd.Stdout = outW
 	cmd.Stderr = errW
-	err := cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return Result{}, &Error{Op: "start", Name: c.Name, Err: err}
+	}
+	pgid.Store(int32(cmd.Process.Pid))
+	killIfDone()
+	err := cmd.Wait()
 	return c.finish(ctx, cmd, stdoutBuf, stderrBuf, err, start)
 }
 

@@ -62,8 +62,10 @@ Run flags:
   --timeout <secs>        Per-turn timeout in seconds
   --tools <list>          Tool allowlist (comma-separated)
   --no-tools              Run with no tools
-  --app-url <url>         App attribution URL (OpenRouter HTTP-Referer)
-  --app-title <name>      App display name (OpenRouter X-OpenRouter-Title)
+  --app-url <url>         App attribution URL (OpenRouter HTTP-Referer);
+                          auto-set when --base-url is OpenRouter
+  --app-title <name>      App display name (OpenRouter X-OpenRouter-Title);
+                          auto-set to "fuji" when --base-url is OpenRouter
   --app-categories <list> App categories (OpenRouter X-OpenRouter-Categories)
   --log-level <level>     debug|info|warn|error (JSON lines on stderr)
   --version               Print version

@@ -21,6 +21,16 @@ func pathResolver(name string) func() (string, error) {
 	}
 }
 
+// requireRg skips the test when ripgrep (rg) is not available on PATH, e.g.
+// CI runners that do not bundle it. Hosting the real rg as a test dependency
+// is not practical, so the grep behavior is only exercised where rg exists.
+func requireRg(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("rg"); err != nil {
+		t.Skip("ripgrep (rg) is not installed on this host; skipping")
+	}
+}
+
 func run(t *testing.T, def tools.Definition, params string) tools.Result {
 	t.Helper()
 	res, err := def.Execute("call_1", json.RawMessage(params), context.Background(), nil)
@@ -44,6 +54,7 @@ func setupRepo(t *testing.T) string {
 }
 
 func TestGrepBasic(t *testing.T) {
+	requireRg(t)
 	dir := setupRepo(t)
 	def := grep.New(dir, pathResolver("rg"))
 	res := run(t, def, `{"pattern":"hello"}`)
@@ -61,6 +72,7 @@ func TestGrepBasic(t *testing.T) {
 }
 
 func TestGrepNoMatch(t *testing.T) {
+	requireRg(t)
 	dir := setupRepo(t)
 	def := grep.New(dir, pathResolver("rg"))
 	res := run(t, def, `{"pattern":"zzzzznope"}`)
@@ -70,6 +82,7 @@ func TestGrepNoMatch(t *testing.T) {
 }
 
 func TestGrepIgnoreCaseAndLiteral(t *testing.T) {
+	requireRg(t)
 	dir := setupRepo(t)
 	def := grep.New(dir, pathResolver("rg"))
 	res := run(t, def, `{"pattern":"HELLO","ignoreCase":true}`)
@@ -85,6 +98,7 @@ func TestGrepIgnoreCaseAndLiteral(t *testing.T) {
 }
 
 func TestGrepContext(t *testing.T) {
+	requireRg(t)
 	dir := t.TempDir()
 	_ = os.WriteFile(filepath.Join(dir, "f.txt"), []byte("one\ntwo\nthree\nfour\n"), 0o644)
 	def := grep.New(dir, pathResolver("rg"))
@@ -96,6 +110,7 @@ func TestGrepContext(t *testing.T) {
 }
 
 func TestGrepLimit(t *testing.T) {
+	requireRg(t)
 	dir := t.TempDir()
 	content := strings.Repeat("match me\n", 50)
 	_ = os.WriteFile(filepath.Join(dir, "big.txt"), []byte(content), 0o644)
@@ -111,6 +126,7 @@ func TestGrepLimit(t *testing.T) {
 }
 
 func TestGrepLineTruncation(t *testing.T) {
+	requireRg(t)
 	dir := t.TempDir()
 	long := strings.Repeat("x", 2000)
 	_ = os.WriteFile(filepath.Join(dir, "long.txt"), []byte(long+"\n"), 0o644)

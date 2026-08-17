@@ -153,6 +153,10 @@ func Resolve(layers ...Layer) (Config, error) {
 			seen[k] = layer.Name
 		}
 	}
+	// Auto-populate OpenRouter app attribution when the base URL is OpenRouter
+	// and the user hasn't set an override. This advertises fuji on OpenRouter
+	// rankings/analytics via HTTP-Referer + X-OpenRouter-* headers.
+	applyOpenRouterAttribution(&cfg)
 	// Track provenance per key, defaults for the rest.
 	cfg.Sources = map[string]string{}
 	for k := range cfg.flatten() {
@@ -264,6 +268,28 @@ func (c Config) flatten() map[string]any {
 		"paths.agentDir":        c.AgentDir,
 		"paths.sessionDir":      c.SessionDir,
 		"paths.skillsDir":       c.SkillsDir,
+	}
+}
+
+// OpenRouter.app attribution defaults, auto-filled when the base URL points
+// at OpenRouter. This is advertising: HTTP-Referer points to the project so
+// usage shows up on OpenRouter's public rankings. Users can still override.
+const (
+	DefaultAppURL   = "https://github.com/paradise-runner/fuji"
+	DefaultAppTitle = "fuji"
+)
+
+// applyOpenRouterAttribution fills the OpenRouter app attribution fields with
+// project defaults whenever the base URL is OpenRouter and no explicit
+// override is configured.
+func applyOpenRouterAttribution(cfg *Config) {
+	if strings.Contains(strings.ToLower(cfg.BaseURL), "openrouter") {
+		if cfg.AppURL == "" {
+			cfg.AppURL = DefaultAppURL
+		}
+		if cfg.AppTitle == "" {
+			cfg.AppTitle = DefaultAppTitle
+		}
 	}
 }
 
