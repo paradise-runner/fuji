@@ -1,0 +1,59 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5'
+          cache: true
+
+      # The tag (e.g. v0.1.0) must agree with the version baked into the source
+      # (0.1.0) so that the artifact is built from the code it advertises.
+      - name: Verify tag matches source version
+        id: version
+        run: |
+          set -euo pipefail
+          BAKED="$(sed -n 's/.*var version = "\([^"]*\)".*/\1/p' cmd/fuji/version.go | head -n1)"
+          TAG="${GITHUB_REF#refs/tags/}"
+          TAG_VERSION="${TAG#v}"
+          echo "baked=${BAKED}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "tag_version=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
+          if [[ -z "${BAKED}" ]]; then
+            echo "error: could not read version from cmd/fuji/version.go" >&2
+            exit 1
+          fi
+          if [[ "${TAG_VERSION}" != "${BAKED}" ]]; then
+            echo "error: tag '${TAG}' does not match baked version '${BAKED}'" >&2
+            exit 1
+          fi
+
+      - name: Build static binary
+        run: |
+          CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${{ steps.version.outputs.tag_version }}" -o "fuji-${{ steps.version.outputs.tag_version }}-linux-amd64" ./cmd/fuji
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: fuji ${{ steps.version.outputs.tag_version }}
+          body: |
+            ## fuji ${{ steps.version.outputs.tag_version }}
+
+            > Release notes are maintained in [CHANGELOG.md](CHANGELOG.md#changelog).
+          files: |
+            fuji-${{ steps.version.outputs.tag_version }}-linux-amd64
