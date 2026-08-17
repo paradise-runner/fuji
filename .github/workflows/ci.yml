@@ -6,6 +6,16 @@ on:
   pull_request:
 
 jobs:
+  release-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate version bump, validity, and changelog
+        run: |
+          bash .github/scripts/check-version.sh
+
   build-and-test:
     runs-on: ubuntu-latest
     steps:
