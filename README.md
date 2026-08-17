@@ -1,5 +1,7 @@
 # fuji
 
+<img src="logo.png" alt="fuji" width="128" />
+
 `fuji` is a pure, naked core for agentic work at scale. Written in Go, it delivers an embeddable, headless agent runtime with bundled tools for a guaranteed agentic experience across fleet deployments.
 
 ---

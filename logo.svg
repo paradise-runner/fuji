@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="1000" height="1000">
+  <defs>
+    <linearGradient id="appleGradient" x1="0.18" y1="0.08" x2="0.82" y2="0.92">
+      <stop offset="0%" stop-color="#f0c8a6"/>
+      <stop offset="20%" stop-color="#e99388"/>
+      <stop offset="48%" stop-color="#d97879"/>
+      <stop offset="72%" stop-color="#ce686d"/>
+      <stop offset="100%" stop-color="#bb5e65"/>
+    </linearGradient>
+  </defs>
+
+  <path
+    d="M51 22 C47 15 48 10 57 5 C61 14 59 20 51 22Z"
+    fill="#7d5d49"
+  />
+
+  <path
+    d="M55 18 C66 6 79 9 88 14 C78 27 65 28 55 18Z"
+    fill="#87996f"
+  />
+
+  <path
+    d="M51 24 C34 19 17 28 13 47 C8 68 20 88 50 92 C80 88 92 68 87 47 C83 28 68 19 51 24Z"
+    fill="url(#appleGradient)"
+  />
+
+  <path
+    d="M25 43 C28 31 39 27 47 30 C38 33 32 39 29 50 C27 57 27 63 29 69 C24 62 22 53 25 43Z"
+    fill="#fff8df"
+    opacity=".55"
+  />
+</svg>
